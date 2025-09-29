@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Starry Sky</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: #0a0a2a;
+    }
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="star-canvas"></canvas>
+  <div id="overlay-ui" style="position:fixed;top:0;left:0;width:100vw;height:100vh;display:flex;align-items:center;justify-content:center;z-index:10;pointer-events:none;">
+    <div id="ui-content" style="text-align:center;width:100vw;"></div>
+  </div>
+  <script>
+    // UI logic
+    const overlay = document.getElementById('overlay-ui');
+    const uiContent = document.getElementById('ui-content');
+    let showHiBabe = true;
+    function renderInitialButton() {
+      uiContent.innerHTML = '';
+      const btn = document.createElement('button');
+      btn.id = 'start-btn';
+      btn.textContent = 'Click Me';
+  btn.style = 'font-size:2.5rem;padding:1em 2.5em;border-radius:2em;background:#fffbe6;color:#a00;font-weight:bold;box-shadow:0 0 18px #fffbe6,0 0 8px #ffb5f9;cursor:pointer;pointer-events:auto;margin-top:2em;';
+      btn.onclick = function() {
+        showHiBabe = false;
+        uiContent.innerHTML = '';
+        showMessage('Do You Want To See Something 😉', true);
+      };
+      uiContent.appendChild(btn);
+    }
+    function showMessage(msg, showYesNo, isNoMsg) {
+      uiContent.innerHTML = `<div style="font-size:2.8rem;color:#fff;text-shadow:0 0 18px #ffb5f9,0 0 8px #fffbe6;">${msg}</div>`;
+      if (showYesNo) {
+        const yesBtn = document.createElement('button');
+        yesBtn.textContent = 'Yes';
+      yesBtn.style = 'font-size:2.2rem;margin:1.5em 1em 0 0;padding:0.7em 2.5em;border-radius:2em;background:#fffbe6;color:#0a0a2a;font-weight:bold;box-shadow:0 0 8px #fffbe6;cursor:pointer;pointer-events:auto;';
+      const noBtn = document.createElement('button');
+      noBtn.textContent = 'No';
+      noBtn.style = 'font-size:2.2rem;margin:1.5em 0 0 1em;padding:0.7em 2.5em;border-radius:2em;background:#ffe0fa;color:#a00;font-weight:bold;box-shadow:0 0 8px #ffb5f9;cursor:pointer;pointer-events:auto;';
+        uiContent.appendChild(yesBtn);
+        uiContent.appendChild(noBtn);
+        yesBtn.onclick = () => showMessage('You Are The Most Beautiful Person In My Eyes 😘', false);
+        noBtn.onclick = () => showMessage('Please Click "YES" Babe 😭', false, true);
+      } else if (isNoMsg) {
+        // Add Go Back button under the 'please click yes babe' message
+        const backBtn = document.createElement('button');
+        backBtn.textContent = 'Go Back';
+  backBtn.style = 'font-size:1.7rem;margin:2em auto 0 auto;padding:0.7em 2.5em;border-radius:2em;background:#fffbe6;color:#0a0a2a;font-weight:bold;box-shadow:0 0 8px #fffbe6;cursor:pointer;pointer-events:auto;display:block;';
+        backBtn.onclick = () => showMessage('Do You Want To See Something 😉', true);
+        uiContent.appendChild(backBtn);
+      }
+    }
+    renderInitialButton();
+  const canvas = document.getElementById('star-canvas');
+    const ctx = canvas.getContext('2d');
+    let w = window.innerWidth;
+    let h = window.innerHeight;
+    canvas.width = w;
+    canvas.height = h;
+
+    // Star colors
+    const starColors = ['#fff', '#ffe9c4', '#b5caff', '#ffd6fa', '#c4fff9', '#ffd700', '#ffb5b5'];
+
+    // Parallax layers
+    const layers = [
+      { count: 80, speed: 0.1, size: [0.5, 1.5] },
+      { count: 60, speed: 0.3, size: [1, 2.5] },
+      { count: 40, speed: 0.6, size: [2, 3.5] }
+    ];
+
+    // Generate stars for each layer
+    let stars = [];
+    layers.forEach((layer, i) => {
+      for (let j = 0; j < layer.count; j++) {
+        stars.push({
+          x: Math.random() * w,
+          y: Math.random() * h,
+          r: Math.random() * (layer.size[1] - layer.size[0]) + layer.size[0],
+          color: starColors[Math.floor(Math.random() * starColors.length)],
+          speed: layer.speed,
+          layer: i
+        });
+      }
+    });
+
+    // Shooting stars
+    let shootingStars = [];
+    function spawnShootingStar() {
+      const y = Math.random() * h * 0.7;
+      shootingStars.push({
+        x: Math.random() * w * 0.7,
+        y: y,
+        len: Math.random() * 80 + 100,
+        speed: Math.random() * 8 + 8,
+        size: Math.random() * 1.5 + 1,
+        color: starColors[Math.floor(Math.random() * starColors.length)],
+        alpha: 1
+      });
+    }
+    setInterval(spawnShootingStar, 1200);
+
+    // Parallax mouse movement
+    let mouseX = w/2, mouseY = h/2;
+    document.addEventListener('mousemove', e => {
+      mouseX = e.clientX;
+      mouseY = e.clientY;
+    });
+    window.addEventListener('resize', () => {
+      w = window.innerWidth;
+      h = window.innerHeight;
+      canvas.width = w;
+      canvas.height = h;
+    });
+
+  // Animated text timing
+  let textStart = Date.now();
+  const textShowDuration = 6000; // ms to stay fully visible
+  const textFadeDuration = 1800; // ms to fade out
+
+    function draw() {
+      // Make overlay UI text visible above canvas
+      overlay.style.pointerEvents = 'none';
+      const btn = document.querySelector('#overlay-ui button, #overlay-ui input');
+      if (btn) btn.style.pointerEvents = 'auto';
+      ctx.clearRect(0, 0, w, h);
+
+      // Calculate text alpha for fade-out
+      let elapsed = Date.now() - textStart;
+      let textAlpha;
+      if (elapsed <= textShowDuration) {
+        textAlpha = 1;
+      } else if (elapsed <= textShowDuration + textFadeDuration) {
+        textAlpha = 1 - ((elapsed - textShowDuration) / textFadeDuration);
+      } else {
+        textAlpha = 0;
+      }
+
+      // Draw animated background text first with extra glow, and show button below it
+      if (showHiBabe && textAlpha > 0.01) {
+        ctx.save();
+        ctx.font = `bold ${Math.floor(w/10)}px 'Brush Script MT', cursive, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.globalAlpha = textAlpha * (0.22 + 0.18 * Math.sin(Date.now()/900));
+        // Create a gradient for more vibrant glow
+        const grad = ctx.createLinearGradient(w/2 - w/8, h/2, w/2 + w/8, h/2);
+        grad.addColorStop(0, '#fffbe6');
+        grad.addColorStop(0.5, '#fff');
+        grad.addColorStop(1, '#ffe0fa');
+        ctx.fillStyle = grad;
+        // Stronger glow
+        ctx.shadowColor = '#fff';
+        ctx.shadowBlur = 48;
+        ctx.fillText('Hi Babe 😘', w/2, h/2);
+        // Extra outer glow
+        ctx.shadowColor = '#ffb5f9';
+        ctx.shadowBlur = 120;
+        ctx.globalAlpha *= 0.7;
+        ctx.fillText('Hi Babe 😘', w/2, h/2);
+        ctx.restore();
+        // Position the button below the text
+        overlay.style.display = 'flex';
+        uiContent.style.display = 'block';
+        uiContent.style.position = 'absolute';
+        uiContent.style.top = `calc(50vh + ${Math.floor(w/10)/2 + 40}px)`;
+        uiContent.style.left = '0';
+        uiContent.style.width = '100vw';
+        uiContent.style.pointerEvents = 'none';
+        const btn = document.getElementById('start-btn');
+        if (!btn) renderInitialButton();
+        else btn.style.pointerEvents = 'auto';
+      } else {
+        // Hide the button overlay if text is gone
+        if (showHiBabe) {
+          uiContent.innerHTML = '';
+        }
+        uiContent.style.position = '';
+        uiContent.style.top = '';
+        uiContent.style.left = '';
+        uiContent.style.width = '';
+      }
+
+      // Parallax offset
+      const offsetX = (mouseX - w/2) / 40;
+      const offsetY = (mouseY - h/2) / 40;
+      // Draw stars
+      for (const star of stars) {
+        ctx.save();
+        ctx.globalAlpha = 0.7 + 0.3 * Math.sin(Date.now()/700 + star.x);
+        ctx.beginPath();
+        ctx.arc(
+          star.x + offsetX * (star.layer+1),
+          star.y + offsetY * (star.layer+1),
+          star.r, 0, 2 * Math.PI
+        );
+        ctx.fillStyle = star.color;
+        ctx.shadowColor = star.color;
+        ctx.shadowBlur = 8;
+        ctx.fill();
+        ctx.restore();
+        // Move star for parallax scroll
+        star.x += star.speed * 0.02;
+        if (star.x > w + 10) star.x = -10;
+      }
+      // Draw shooting stars
+      for (let i = shootingStars.length-1; i >= 0; i--) {
+        const s = shootingStars[i];
+        ctx.save();
+        ctx.globalAlpha = s.alpha;
+        ctx.strokeStyle = s.color;
+        ctx.lineWidth = s.size;
+        ctx.beginPath();
+        ctx.moveTo(s.x, s.y);
+        ctx.lineTo(s.x + s.len, s.y + s.len * 0.2);
+        ctx.shadowColor = s.color;
+        ctx.shadowBlur = 12;
+        ctx.stroke();
+        ctx.restore();
+        s.x += s.speed;
+        s.y += s.speed * 0.2;
+        s.alpha -= 0.012;
+        if (s.alpha <= 0) shootingStars.splice(i, 1);
+      }
+      requestAnimationFrame(draw);
+    }
+    draw();
+  </script>
+</body>
+</html>
