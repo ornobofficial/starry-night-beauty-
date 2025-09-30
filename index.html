@@ -26,6 +26,48 @@
   </div>
   <script>
     // UI logic
+
+    // --- Heart Animation (Optimized) ---
+    const heartColors = ['#ffb5b5', '#ff69b4', '#fff0f5', '#ffd6fa', '#ffb5f9'];
+    let hearts = [];
+    let lastHeartSpawn = 0;
+    const HEART_SPAWN_INTERVAL = 350;
+    const MAX_HEARTS = 80;
+    function spawnHeart() {
+      if (hearts.length >= MAX_HEARTS) return;
+      const size = Math.random() * 18 + 14;
+      const x = Math.random() * w;
+      const y = h + size;
+      const speed = 0.4 + Math.random() * 0.7;
+      const opacity = 0.5 + Math.random() * 0.5;
+      const color = heartColors[Math.floor(Math.random() * heartColors.length)];
+      hearts.push({x, y, size, speed, opacity, color, drift: (Math.random()-0.5)*0.6});
+    }
+
+    // --- Surprise Button and Heart Shooting Stars ---
+    let surpriseActive = false;
+    function spawnHeartShootingStars() {
+      const MAX_SHOOTING_STARS = 60;
+      // Heart parametric: x = 16sin^3(t), y = 13cos(t)-5cos(2t)-2cos(3t)-cos(4t)
+      const cx = w/2, cy = h/2 + 40, scale = Math.min(w, h)/18;
+      for (let i = 0; i < 18; i++) {
+        if (shootingStars.length >= MAX_SHOOTING_STARS) break;
+        const t = Math.PI - (i/(18-1))*Math.PI*2;
+        const hx = cx + scale*16*Math.pow(Math.sin(t),3);
+        const hy = cy - scale*(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t));
+        shootingStars.push({
+          x: hx,
+          y: hy,
+          len: Math.random()*60+80,
+          speed: Math.random()*6+7,
+          size: Math.random()*1.5+1.5,
+          color: starColors[Math.floor(Math.random()*starColors.length)],
+          alpha: 1,
+          vx: Math.cos(t-Math.PI/2)*2,
+          vy: Math.sin(t-Math.PI/2)*2
+        });
+      }
+    }
     const overlay = document.getElementById('overlay-ui');
     const uiContent = document.getElementById('ui-content');
     let showHiBabe = true;
@@ -43,14 +85,113 @@
       uiContent.appendChild(btn);
     }
     function showMessage(msg, showYesNo, isNoMsg) {
+      // Lyrics and delays
+      const lyrics = [
+        'Tere Dil Pe Haq Mera Hai ❤️',
+        'Tu Sanam Beshak Mera Hai 💕',
+        'Phir Lakeerein Ho Ya Na Ho 🌙',
+        'Tu Mera Hai Tu Mera Hai 💖'
+      ];
+      const lyricDelays = [900, 1200, 1200, 1200]; // ms for each lyric line
+
+      // Helper to add glow
+      function glowClass(extra) {
+        return `font-size:2.2rem;color:#fff;text-shadow:0 0 18px #ffb5f9,0 0 8px #fffbe6,0 0 32px #fff;${extra||''}`;
+      }
+
+      // Main message with lyrics
+      if (msg === 'You Are The Most Beautiful Person In My Eyes 😘') {
+        // Show main message, then fade out and show lyrics on a blank page
+        uiContent.innerHTML = `<div id=\"main-msg\" style=\"font-size:2.8rem;color:#fff;text-shadow:0 0 24px #ffb5f9,0 0 12px #fffbe6,0 0 40px #fff;font-weight:bold;opacity:1;transition:opacity 1s;\">${msg}</div>`;
+        const mainMsg = document.getElementById('main-msg');
+        setTimeout(() => {
+          mainMsg.style.opacity = 0;
+          setTimeout(() => {
+            // Lyrics page: keep starry background, center lyrics with transparent overlay
+            uiContent.style.background = 'transparent';
+            uiContent.innerHTML = '<div id="lyrics"></div>';
+            const lyricsDiv = document.getElementById('lyrics');
+            let i = 0;
+            function showLyricLine() {
+              if (i >= lyrics.length) {
+                // Show only the Surprise button first
+                uiContent.innerHTML = `<button id=\"surprise-btn\" style=\"display:block;margin:2.5em auto 0 auto;font-size:2.2rem;padding:0.7em 2.5em;border-radius:2em;background:#ffe0fa;color:#a00;font-weight:bold;box-shadow:0 0 18px #ffb5f9;cursor:pointer;pointer-events:auto;\">Click for a Surprise</button>`;
+                // Surprise button logic
+                const btn = document.getElementById('surprise-btn');
+                if(btn) btn.onclick = function() {
+                  if (!surpriseActive) {
+                    surpriseActive = true;
+                    spawnHeartShootingStars();
+                    // Show final text on a new overlay 'page'
+                    setTimeout(()=>{
+                      // Hide previous UI
+                      uiContent.innerHTML = '';
+                      // Create overlay for final text
+                      const finalOverlay = document.createElement('div');
+                      finalOverlay.style = 'position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:30;display:flex;align-items:center;justify-content:center;pointer-events:none;';
+                      finalOverlay.id = 'final-text-overlay';
+                      const finalText = document.createElement('div');
+                      finalText.id = 'final-surprise';
+                      finalText.textContent = 'I love you more than the stars in the sky ✨❤️';
+                      finalText.style = 'font-size:2.7rem;color:#fff;text-shadow:0 0 32px #ffb5f9,0 0 18px #fffbe6,0 0 60px #fff;font-weight:bold;opacity:0;transition:opacity 1.5s;text-align:center;max-width:90vw;';
+                      finalOverlay.appendChild(finalText);
+                      document.body.appendChild(finalOverlay);
+                      setTimeout(()=>{
+                        finalText.style.opacity = 1;
+                        // Burst of hearts for final effect
+                        for(let j=0;j<30;j++) spawnHeart();
+                        // After a delay, show the last page with 'From Your Beloved Babu 💙'
+                        setTimeout(()=>{
+                          finalOverlay.style.display = 'none';
+                          const lastOverlay = document.createElement('div');
+                          lastOverlay.style = 'position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:40;display:flex;align-items:center;justify-content:center;pointer-events:none;';
+                          lastOverlay.id = 'last-text-overlay';
+                          const lastText = document.createElement('div');
+                          lastText.textContent = 'From Your Beloved Babu 💙';
+                          lastText.style = 'font-size:2.5rem;color:#fff;text-shadow:0 0 24px #5ecbff,0 0 12px #fffbe6,0 0 40px #fff;font-weight:bold;opacity:0;transition:opacity 1.5s;text-align:center;max-width:90vw;';
+                          lastOverlay.appendChild(lastText);
+                          document.body.appendChild(lastOverlay);
+                          setTimeout(()=>{lastText.style.opacity=1;}, 100);
+                        }, 2200);
+                      }, 100);
+                    }, 200);
+                    setTimeout(()=>{surpriseActive=false;}, 2000);
+                  }
+                };
+                return;
+              }
+              lyricsDiv.innerHTML = '';
+              const bg = document.createElement('div');
+              bg.style = 'background:#fff;border-radius:1.5em;display:inline-block;padding:1.2em 2.5em;margin-top:2em;box-shadow:0 0 32px #fffbe6,0 0 12px #ffb5f9;min-width:320px;opacity:0.95;';
+              const line = document.createElement('div');
+              line.textContent = lyrics[i];
+              line.style = 'font-size:2.5rem;color:#a00;text-align:center;font-weight:bold;opacity:0;transition:opacity 1s;text-shadow:0 0 18px #ffb5f9,0 0 8px #fffbe6,0 0 32px #fff;';
+              bg.appendChild(line);
+              lyricsDiv.appendChild(bg);
+              setTimeout(() => { line.style.opacity = 1; }, 50);
+              setTimeout(() => {
+                line.style.opacity = 0;
+                setTimeout(() => {
+                  i++;
+                  showLyricLine();
+                }, 1000);
+              }, lyricDelays[i]);
+            }
+            showLyricLine();
+          }, 1000); // fade out main message
+        }, 1200); // how long to show main message before fade out
+        return;
+      }
+
+      // Default message logic
       uiContent.innerHTML = `<div style="font-size:2.8rem;color:#fff;text-shadow:0 0 18px #ffb5f9,0 0 8px #fffbe6;">${msg}</div>`;
       if (showYesNo) {
         const yesBtn = document.createElement('button');
         yesBtn.textContent = 'Yes';
-      yesBtn.style = 'font-size:2.2rem;margin:1.5em 1em 0 0;padding:0.7em 2.5em;border-radius:2em;background:#fffbe6;color:#0a0a2a;font-weight:bold;box-shadow:0 0 8px #fffbe6;cursor:pointer;pointer-events:auto;';
-      const noBtn = document.createElement('button');
-      noBtn.textContent = 'No';
-      noBtn.style = 'font-size:2.2rem;margin:1.5em 0 0 1em;padding:0.7em 2.5em;border-radius:2em;background:#ffe0fa;color:#a00;font-weight:bold;box-shadow:0 0 8px #ffb5f9;cursor:pointer;pointer-events:auto;';
+        yesBtn.style = 'font-size:2.2rem;margin:1.5em 1em 0 0;padding:0.7em 2.5em;border-radius:2em;background:#fffbe6;color:#0a0a2a;font-weight:bold;box-shadow:0 0 8px #fffbe6;cursor:pointer;pointer-events:auto;';
+        const noBtn = document.createElement('button');
+        noBtn.textContent = 'No';
+        noBtn.style = 'font-size:2.2rem;margin:1.5em 0 0 1em;padding:0.7em 2.5em;border-radius:2em;background:#ffe0fa;color:#a00;font-weight:bold;box-shadow:0 0 8px #ffb5f9;cursor:pointer;pointer-events:auto;';
         uiContent.appendChild(yesBtn);
         uiContent.appendChild(noBtn);
         yesBtn.onclick = () => showMessage('You Are The Most Beautiful Person In My Eyes 😘', false);
@@ -59,7 +200,7 @@
         // Add Go Back button under the 'please click yes babe' message
         const backBtn = document.createElement('button');
         backBtn.textContent = 'Go Back';
-  backBtn.style = 'font-size:1.7rem;margin:2em auto 0 auto;padding:0.7em 2.5em;border-radius:2em;background:#fffbe6;color:#0a0a2a;font-weight:bold;box-shadow:0 0 8px #fffbe6;cursor:pointer;pointer-events:auto;display:block;';
+        backBtn.style = 'font-size:1.7rem;margin:2em auto 0 auto;padding:0.7em 2.5em;border-radius:2em;background:#fffbe6;color:#0a0a2a;font-weight:bold;box-shadow:0 0 8px #fffbe6;cursor:pointer;pointer-events:auto;display:block;';
         backBtn.onclick = () => showMessage('Do You Want To See Something 😉', true);
         uiContent.appendChild(backBtn);
       }
@@ -97,9 +238,13 @@
       }
     });
 
-    // Shooting stars
+    // Shooting stars (Optimized)
     let shootingStars = [];
+    let lastShootingStarSpawn = 0;
+    const SHOOTING_STAR_SPAWN_INTERVAL = 1200;
+    const MAX_SHOOTING_STARS = 60;
     function spawnShootingStar() {
+      if (shootingStars.length >= MAX_SHOOTING_STARS) return;
       const y = Math.random() * h * 0.7;
       shootingStars.push({
         x: Math.random() * w * 0.7,
@@ -111,7 +256,6 @@
         alpha: 1
       });
     }
-    setInterval(spawnShootingStar, 1200);
 
     // Parallax mouse movement
     let mouseX = w/2, mouseY = h/2;
@@ -131,12 +275,28 @@
   const textShowDuration = 6000; // ms to stay fully visible
   const textFadeDuration = 1800; // ms to fade out
 
+
+
+
     function draw() {
+      // Spawn hearts at interval (single loop, no setInterval)
+      const now = Date.now();
+      if (now - lastHeartSpawn > HEART_SPAWN_INTERVAL) {
+        spawnHeart();
+        lastHeartSpawn = now;
+      }
+      // Spawn shooting stars at interval (single loop, no setInterval)
+      if (now - lastShootingStarSpawn > SHOOTING_STAR_SPAWN_INTERVAL) {
+        spawnShootingStar();
+        lastShootingStarSpawn = now;
+      }
       // Make overlay UI text visible above canvas
       overlay.style.pointerEvents = 'none';
       const btn = document.querySelector('#overlay-ui button, #overlay-ui input');
       if (btn) btn.style.pointerEvents = 'auto';
       ctx.clearRect(0, 0, w, h);
+
+  // ...existing code...
 
       // Calculate text alpha for fade-out
       let elapsed = Date.now() - textStart;
@@ -216,7 +376,33 @@
         star.x += star.speed * 0.02;
         if (star.x > w + 10) star.x = -10;
       }
-      // Draw shooting stars
+      // Draw floating hearts (remove faded ones, cap array)
+      for (let i = hearts.length-1; i >= 0; i--) {
+        const heart = hearts[i];
+        ctx.save();
+        ctx.globalAlpha = heart.opacity;
+        ctx.translate(heart.x, heart.y);
+        ctx.scale(heart.size/32, heart.size/32);
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.bezierCurveTo(0, -12, -16, -12, -16, 0);
+        ctx.bezierCurveTo(-16, 12, 0, 16, 0, 28);
+        ctx.bezierCurveTo(0, 16, 16, 12, 16, 0);
+        ctx.bezierCurveTo(16, -12, 0, -12, 0, 0);
+        ctx.closePath();
+        ctx.fillStyle = heart.color;
+        ctx.shadowColor = heart.color;
+        ctx.shadowBlur = 18;
+        ctx.fill();
+        ctx.restore();
+        heart.y -= heart.speed;
+        heart.x += heart.drift;
+        heart.opacity -= 0.0015 + 0.0007*Math.random();
+        if (heart.y < -40 || heart.opacity <= 0) hearts.splice(i, 1);
+      }
+      if (hearts.length > MAX_HEARTS) hearts.length = MAX_HEARTS;
+
+      // Draw shooting stars (normal and heart pattern, remove faded, cap array)
       for (let i = shootingStars.length-1; i >= 0; i--) {
         const s = shootingStars[i];
         ctx.save();
@@ -230,11 +416,17 @@
         ctx.shadowBlur = 12;
         ctx.stroke();
         ctx.restore();
-        s.x += s.speed;
-        s.y += s.speed * 0.2;
+        if (typeof s.vx === 'number' && typeof s.vy === 'number') {
+          s.x += s.vx + s.speed;
+          s.y += s.vy + s.speed * 0.2;
+        } else {
+          s.x += s.speed;
+          s.y += s.speed * 0.2;
+        }
         s.alpha -= 0.012;
         if (s.alpha <= 0) shootingStars.splice(i, 1);
       }
+      if (shootingStars.length > MAX_SHOOTING_STARS) shootingStars.length = MAX_SHOOTING_STARS;
       requestAnimationFrame(draw);
     }
     draw();
